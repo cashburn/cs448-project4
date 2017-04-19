@@ -27,6 +27,7 @@ class CreateIndex implements Plan {
         ixColumn = tree.getIxColumn();
 
         QueryCheck.fileNotExists(fileName);
+
         //check if the table exists and set schema
         schema = QueryCheck.tableExists(ixTable);
         QueryCheck.columnExists(schema, ixColumn);
@@ -52,14 +53,18 @@ class CreateIndex implements Plan {
         HashIndex hash = new HashIndex(fileName);
         FileScan fileScan = new FileScan(schema, new HeapFile(ixTable));
         int fieldNum = schema.fieldNumber(ixColumn);
+
+        //add each tuple in table to hash index
         while (fileScan.hasNext()) {
             Tuple tuple = fileScan.getNext();
             hash.insertEntry(new SearchKey(tuple.getField(fieldNum)),
                     fileScan.getLastRID());
         }
         fileScan.close();
+
+        //add index to system catalog
         Minibase.SystemCatalog.createIndex(fileName, ixTable, ixColumn);
-        System.out.printf("Index %s created", fileName);
+        System.out.printf("Index %s created.\n", fileName);
     } // public void execute()
 
 } // class CreateIndex implements Plan
