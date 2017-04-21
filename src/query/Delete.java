@@ -7,6 +7,9 @@ import relop.FileScan;
 import relop.Schema;
 import relop.Predicate;
 import relop.Tuple;
+import global.Minibase;
+import global.SearchKey;
+import index.HashIndex;
 
 
 /**
@@ -48,6 +51,12 @@ class Delete implements Plan {
           if(preds[i][j].evaluate(temp)){
             count++;
             hf.deleteRecord(filescan.getLastRID());
+            IndexDesc[] id = Minibase.SystemCatalog.getIndexes(file);
+            for(IndexDesc ind: id){
+              Minibase.SystemCatalog.dropIndex(ind.indexName);
+              Minibase.SystemCatalog.createIndex(ind.indexName, ind.tableName, ind.columnName);
+              // SHOULD THIS LAST LINE BE HERE??
+            }
           }
         }
       }
