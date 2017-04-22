@@ -9,7 +9,7 @@ class Update implements Plan {
 
   /**
    * Optimizes the plan, given the parsed query.
-   * 
+   *
    * @throws QueryException if invalid column names, values, or pedicates
    */
   public Update(AST_Update tree) throws QueryException {
@@ -22,7 +22,7 @@ class Update implements Plan {
   public void execute() {
 
     // print the output message
-    System.out.println("0 rows affected. (Not implemented)");
+    System.out.println("0 rows updated. (Not implemented)");
 
   } // public void execute()
 

@@ -29,9 +29,6 @@ class Insert implements Plan {
         schema = QueryCheck.tableExists(fileName);
         QueryCheck.insertValues(schema, obj);
         tuple = new Tuple(schema);
-
-
-
    } // public Insert(AST_Insert tree) throws QueryException
 
     /**
@@ -39,7 +36,6 @@ class Insert implements Plan {
     */
     public void execute() {
         //add tuple to table
-
         tuple.setAllFields(obj);
         HeapFile hf = new HeapFile(fileName);
         RID rid = tuple.insertIntoFile(hf);
@@ -67,7 +63,7 @@ class Insert implements Plan {
         int recCnt = syscatT.getIntFld(1) + 1;
         syscatT.setIntFld(1, recCnt);
         syscatT.insertIntoFile(hf);
-        System.out.println("1 rows affected.");
+        System.out.println("1 row created.");
 
     } // public void execute()
 
