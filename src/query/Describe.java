@@ -1,7 +1,7 @@
 package query;
 
 import parser.AST_Describe;
-import relop.*;
+import relop.Schema;
 
 /**
  * Execution plan for describing tables.

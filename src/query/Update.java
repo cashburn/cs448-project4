@@ -23,7 +23,7 @@ class Update implements Plan {
   /**
    * Optimizes the plan, given the parsed query.
    *
-   * @throws QueryException if invalid column names, values, or pedicates
+   * @throws QueryException if invalid column names, values, or predicates
    */
   public Update(AST_Update tree) throws QueryException {
     filename = tree.getFileName();
@@ -57,6 +57,7 @@ class Update implements Plan {
     FileScan fs = new FileScan(sch, hf);
 
     while(fs.hasNext()){
+      check = true;
       Tuple temp = fs.getNext();
       for (Predicate[] p : preds){
         for (Predicate pre: p){

@@ -1,10 +1,13 @@
 package query;
 
+import global.Minibase;
+import global.SearchKey;
+import heap.HeapFile;
+import index.HashIndex;
 import parser.AST_CreateIndex;
-import global.*;
-import relop.*;
-import index.*;
-import heap.*;
+import relop.FileScan;
+import relop.Schema;
+import relop.Tuple;
 
 /**
  * Execution plan for creating indexes.

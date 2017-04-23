@@ -1,10 +1,9 @@
 package query;
 
+import global.SortKey;
+import heap.HeapFile;
 import parser.AST_Select;
-import global.*;
 import relop.*;
-import index.*;
-import heap.*;
 
 /**
  * Execution plan for selecting tuples.
@@ -25,7 +24,7 @@ class Select implements Plan {
     Iterator[] fileScans;
     Iterator[] simpleJoins;
     Iterator projection;
-    Iterator selection;
+    Iterator[] selections;
     Integer[] fields;
     //Iterator[] iters;
 
@@ -49,6 +48,12 @@ class Select implements Plan {
         fileScans = new FileScan[tables.length];
         simpleJoins = new SimpleJoin[tables.length - 1];
         fields = new Integer[columns.length];
+
+        if (predicates.length > 0)
+            selections = new Iterator[predicates.length];
+        else
+            selections = new Iterator[1];
+
 
         //validate and open tables
         for (int i = 0; i < tables.length; i++) {
@@ -109,24 +114,42 @@ class Select implements Plan {
 
         //naive implementation with 0 joins
         if (simpleJoins.length < 0) {
+            for (int i = 0; i < fileScans.length; i++) {
+                fileScans[i].close();
+            }
             throw new QueryException("No tables selected");
         }
         else if (simpleJoins.length == 0) {
             if (predicates.length > 0) {
-                selection = new Selection(fileScans[0], predicates[0]);
+                selections[0] = new Selection(fileScans[0], predicates[0]);
+                for (int i = 1; i < predicates.length; i++) {
+                    selections[i] = new Selection(selections[i - 1], predicates[i]);
+                }
+
             }
             else {
-                selection = fileScans[0];
+                selections[0] = fileScans[0];
             }
 
-            projection = new Projection(selection, fields);
+            projection = new Projection(selections[selections.length - 1], fields);
         }
 
         else {
-            for (int i = 0; i < fileScans.length; i++) {
-                fileScans[i].close();
+            simpleJoins[0] = new SimpleJoin(fileScans[0], fileScans[1]);
+            for (int i = 1; i < simpleJoins.length; i++) {
+                simpleJoins[i] = new SimpleJoin(simpleJoins[i-1], fileScans[i+1]);
             }
-            throw new QueryException("Join necessary. (Not implemented)");
+            if (predicates.length > 0) {
+                selections[0] = new Selection(simpleJoins[simpleJoins.length-1], predicates[0]);
+                for (int i = 1; i < predicates.length; i++) {
+                    selections[i] = new Selection(selections[i - 1], predicates[i]);
+                }
+            }
+            else {
+                selections[0] = simpleJoins[simpleJoins.length-1];
+            }
+
+            projection = new Projection(selections[selections.length - 1], fields);
         }
 
 
