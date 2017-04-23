@@ -63,10 +63,10 @@ class Insert implements Plan {
             if (!fileName.equalsIgnoreCase(tmp))
                 tmp = null;
         }
-
+        RID syscatRid = syscatFs.getLastRID();
         int recCnt = syscatT.getIntFld(1) + 1;
         syscatT.setIntFld(1, recCnt);
-        syscatT.insertIntoFile(Minibase.SystemCatalog.f_rel);
+        Minibase.SystemCatalog.f_rel.updateRecord(syscatRid, syscatT.getData());
         System.out.println("1 row created.");
 
     } // public void execute()
