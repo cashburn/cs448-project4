@@ -59,6 +59,7 @@ class Update implements Plan {
     while(fs.hasNext()){
       check = true;
       Tuple temp = fs.getNext();
+      check = true;
       for (Predicate[] p : preds){
         for (Predicate pre: p){
             if(!pre.evaluate(temp)){
