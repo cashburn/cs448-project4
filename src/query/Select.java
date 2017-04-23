@@ -21,6 +21,16 @@ class Select implements Plan {
     Schema allSchema;
     Schema finalSchema;
 
+    HeapFile[] heapFiles;
+    Iterator[] fileScans;
+    Iterator[] simpleJoins;
+    Iterator projection;
+    Iterator selection;
+    Integer[] fields;
+    //Iterator[] iters;
+
+
+
     /**
     * Optimizes the plan, given the parsed query.
     *
@@ -33,11 +43,26 @@ class Select implements Plan {
         tables = tree.getTables();
         isExplain = tree.isExplain;
         isDistinct = false; //assume not distinct for project
-        schemas = new Schema[tables.length];
 
-        //validate inputs
+        schemas = new Schema[tables.length];
+        heapFiles = new HeapFile[tables.length];
+        fileScans = new FileScan[tables.length];
+        simpleJoins = new SimpleJoin[tables.length - 1];
+        fields = new Integer[columns.length];
+
+        //validate and open tables
         for (int i = 0; i < tables.length; i++) {
-            schemas[i] = QueryCheck.tableExists(tables[i]);
+            try {
+                schemas[i] = QueryCheck.tableExists(tables[i]);
+            } catch (QueryException e) {
+                //close scans just opened
+                for (int j = 0; j < i; j++) {
+                    fileScans[j].close();
+                }
+                throw e;
+            }
+            heapFiles[i] = new HeapFile(tables[i]);
+            fileScans[i] = new FileScan(schemas[i], heapFiles[i]);
         }
 
         //build join schema
@@ -51,16 +76,60 @@ class Select implements Plan {
         for (int i = 0; i < columns.length; i++) {
             int fldno = allSchema.fieldNumber(columns[i]);
             if (fldno < 0) {
-                throw new QueryException("ERROR: Column not found");
+                //close scans just opened
+                for (int j = 0; j < fileScans.length; j++) {
+                    fileScans[j].close();
+                }
+                throw new QueryException("Column not found");
             }
             finalSchema.initField(i, allSchema, fldno);
+            fields[i] = fldno;
         }
 
         if (columns.length == 0) {
             finalSchema = allSchema;
+            fields = new Integer[finalSchema.getCount()];
+            for (int i = 0; i < fields.length; i++) {
+                fields[i] = i;
+            }
         }
-        System.out.println("Final Schema");
-        finalSchema.print();
+
+        //validate predicates
+        for (Predicate[] p1 : predicates) {
+            for (Predicate p : p1) {
+                if (!p.validate(allSchema)) {
+                    //close scans just opened
+                    for (int j = 0; j < fileScans.length; j++) {
+                        fileScans[j].close();
+                    }
+                    throw new QueryException("Invalid predicate");
+                }
+            }
+        }
+
+        //naive implementation with 0 joins
+        if (simpleJoins.length < 0) {
+            throw new QueryException("No tables selected");
+        }
+        else if (simpleJoins.length == 0) {
+            if (predicates.length > 0) {
+                selection = new Selection(fileScans[0], predicates[0]);
+            }
+            else {
+                selection = fileScans[0];
+            }
+
+            projection = new Projection(selection, fields);
+        }
+
+        else {
+            for (int i = 0; i < fileScans.length; i++) {
+                fileScans[i].close();
+            }
+            throw new QueryException("Join necessary. (Not implemented)");
+        }
+
+
     } // public Select(AST_Select tree) throws QueryException
 
     /**
@@ -68,8 +137,14 @@ class Select implements Plan {
     */
     public void execute() {
 
+        //while (fileScans[0].hasNext())
+            //fileScans[0].getNext().print();
+        projection.execute();
+        for (int i = 0; i < fileScans.length; i++) {
+            fileScans[i].close();
+        }
     // print the output message
-    System.out.println("0 rows selected. (Not implemented)");
+
 
     } // public void execute()
 
