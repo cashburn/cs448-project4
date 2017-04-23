@@ -14,73 +14,74 @@ import relop.Tuple;
  * Execution plan for updating tuples.
  */
 class Update implements Plan {
-  String filename;
-  HeapFile hf;
-  Schema sch;
-  Predicate[][] preds;
-  String[] headers;
-  Object[] vals;
-  /**
-   * Optimizes the plan, given the parsed query.
-   *
-   * @throws QueryException if invalid column names, values, or predicates
-   */
-  public Update(AST_Update tree) throws QueryException {
-    filename = tree.getFileName();
-    hf = new HeapFile(filename);
-    sch = QueryCheck.tableExists(filename);
-    preds = tree.getPredicates();
-    headers = tree.getColumns();
-    vals = tree.getValues();
-    int[] nums;
+    String filename;
+    HeapFile hf;
+    Schema sch;
+    Predicate[][] preds;
+    String[] headers;
+    Object[] vals;
 
-    QueryCheck.predicates(sch, preds);
-    for (String c : headers){
-      QueryCheck.columnExists(sch, c);
-    }
+    /**
+     * Optimizes the plan, given the parsed query.
+     *
+     * @throws QueryException if invalid column names, values, or predicates
+     */
+    public Update(AST_Update tree) throws QueryException {
+        filename = tree.getFileName();
+        hf = new HeapFile(filename);
+        sch = QueryCheck.tableExists(filename);
+        preds = tree.getPredicates();
+        headers = tree.getColumns();
+        vals = tree.getValues();
+        int[] nums;
 
-    nums = new int[headers.length];
-
-    for (int i = 0;i<headers.length; i++){
-      nums[i] = sch.fieldNumber(headers[i]);
-    }
-    QueryCheck.updateValues(sch, nums, vals);
-  } // public Update(AST_Update tree) throws QueryException
-
-  /**
-   * Executes the plan and prints applicable output.
-   */
-  public void execute() {
-    int count = 0;
-    IndexDesc[] ids = Minibase.SystemCatalog.getIndexes(filename);
-    boolean check = true;
-    FileScan fs = new FileScan(sch, hf);
-
-    while(fs.hasNext()){
-      check = true;
-      Tuple temp = fs.getNext();
-      check = true;
-      for (Predicate[] p : preds){
-        for (Predicate pre: p){
-            if(!pre.evaluate(temp)){
-              check = false;
-            }
-          }
+        QueryCheck.predicates(sch, preds);
+        for (String c : headers) {
+            QueryCheck.columnExists(sch, c);
         }
-        if(check){
-            count++;
-            Tuple t = temp;
-            RID tRid = fs.getLastRID();
-            for (int i = 0; i<headers.length; i++){
-              t.setField(headers[i], vals[i]);
-              byte[] insert = t.getData();
-              hf.updateRecord(tRid, insert);
+
+        nums = new int[headers.length];
+
+        for (int i = 0; i < headers.length; i++) {
+            nums[i] = sch.fieldNumber(headers[i]);
+        }
+        QueryCheck.updateValues(sch, nums, vals);
+    } // public Update(AST_Update tree) throws QueryException
+
+    /**
+     * Executes the plan and prints applicable output.
+     */
+    public void execute() {
+        int count = 0;
+        IndexDesc[] ids = Minibase.SystemCatalog.getIndexes(filename);
+        boolean check = true;
+        FileScan fs = new FileScan(sch, hf);
+
+        while (fs.hasNext()) {
+            check = true;
+            Tuple temp = fs.getNext();
+            check = true;
+            for (Predicate[] p : preds) {
+                for (Predicate pre : p) {
+                    if (!pre.evaluate(temp)) {
+                        check = false;
+                    }
+                }
+            }
+            if (check) {
+                count++;
+                Tuple t = temp;
+                RID tRid = fs.getLastRID();
+                for (int i = 0; i < headers.length; i++) {
+                    t.setField(headers[i], vals[i]);
+                    byte[] insert = t.getData();
+                    hf.updateRecord(tRid, insert);
+                }
             }
         }
-      }
-      fs.close();
-    // print the output message
-     System.out.println(count + " rows updated.");
-  } // public void execute()
+        fs.close();
+        // print the output message
+        System.out.println(count + " rows updated.");
+    } // public void execute()
 
 } // class Update implements Plan
