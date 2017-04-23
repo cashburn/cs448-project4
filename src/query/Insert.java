@@ -62,7 +62,7 @@ class Insert implements Plan {
 
         int recCnt = syscatT.getIntFld(1) + 1;
         syscatT.setIntFld(1, recCnt);
-        syscatT.insertIntoFile(hf);
+        syscatT.insertIntoFile(Minibase.SystemCatalog.f_rel);
         System.out.println("1 row created.");
 
     } // public void execute()
