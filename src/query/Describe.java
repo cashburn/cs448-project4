@@ -2,6 +2,8 @@ package query;
 
 import parser.AST_Describe;
 import relop.Schema;
+import global.AttrType;
+import java.util.ArrayList;
 
 /**
  * Execution plan for describing tables.
@@ -27,7 +29,18 @@ class Describe implements Plan {
    */
   public void execute() {
       //TODO: Print out types
-      schema.print();
+      // String[] cols = new String[schema.getCount()];
+      // String[] names = new String[schema.getCount()];
+      for(int i = 0 ; i< schema.getCount(); i++){
+        // cols[i] = AttrType.toString(schema.fieldType(i));
+        // names[i] = schema.fieldName(i);
+        System.out.printf("(%s) %s ", AttrType.toString(schema.fieldType(i)), schema.fieldName(i));
+        if(i != schema.getCount()-1){
+          System.out.print("|");
+        }
+      } 
+      System.out.println();
+
   } // public void execute()
 
 } // class Describe implements Plan
