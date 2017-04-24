@@ -70,8 +70,9 @@ class Select implements Plan {
                 schemas[i] = QueryCheck.tableExists(tables[i]);
             } catch (QueryException e) {
                 //close scans just opened
+                System.out.println("WILL:: "+e.toString());
                 for (int j = 0; j < i; j++) {
-                    fileScans[j].close();
+                    //fileScans[j].close();
                 }
                 throw e;
             }
