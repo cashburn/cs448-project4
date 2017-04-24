@@ -1,7 +1,6 @@
 package query;
 
 import parser.AST_Delete;
-import parser.AST_Delete;
 import heap.HeapFile;
 import relop.FileScan;
 import relop.Schema;

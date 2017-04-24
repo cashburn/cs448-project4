@@ -4,6 +4,15 @@ import global.SortKey;
 import heap.HeapFile;
 import parser.AST_Select;
 import relop.*;
+import heap.HeapFile;
+import relop.FileScan;
+import relop.Schema;
+import relop.Predicate;
+import relop.Tuple;
+import global.Minibase;
+import global.SearchKey;
+import index.HashIndex;
+import global.RID;
 
 /**
  * Execution plan for selecting tuples.
@@ -67,8 +76,13 @@ class Select implements Plan {
                 throw e;
             }
             heapFiles[i] = new HeapFile(tables[i]);
+            //fileScans[i] = new FileScan(schemas[i], heapFiles[i]);
+        }
+        heapFiles = sortByRecord(heapFiles, schemas);
+        for (int i = 0 ; i < heapFiles.length; i++){
             fileScans[i] = new FileScan(schemas[i], heapFiles[i]);
         }
+
 
         //build join schema
         allSchema = new Schema(0);
@@ -170,5 +184,47 @@ class Select implements Plan {
 
 
     } // public void execute()
+
+    public static HeapFile[] sortByRecord(HeapFile[] heapFiles, Schema[] sch){
+        String file;
+        int[] countHolder = new int[heapFiles.length];
+        for (int i = 0 ;i < heapFiles.length; i++){
+            file = heapFiles[i].toString();
+            Schema syscatS = Minibase.SystemCatalog.s_rel;
+            FileScan syscatFs = new FileScan(syscatS, Minibase.SystemCatalog.f_rel);
+            String tmp = null;
+            Tuple syscatT = null;
+            while (syscatFs.hasNext() && tmp == null) {
+                syscatT = syscatFs.getNext();
+                tmp = syscatT.getStringFld(0);
+                if (!file.equalsIgnoreCase(tmp))
+                    tmp = null;
+            }
+            RID syscatRid = syscatFs.getLastRID();
+            int recCnt = syscatT.getIntFld(1);
+            countHolder[i] = recCnt;
+        }
+        
+        //wow a bubblesort algorithm in production, this is sad
+        int tmp;
+        HeapFile h;
+        Schema t;
+        for(int i = 0 ; i<heapFiles.length; i++){
+            for(int j = 0; j < heapFiles.length-1; j++){
+                if(countHolder[j+1] < countHolder[j]){
+                    tmp = countHolder[j];
+                    countHolder[j] = countHolder[j+1];
+                    countHolder[j+1] = tmp;
+                    h = heapFiles[j];
+                    heapFiles[j] = heapFiles[j+1];
+                    heapFiles[j+1] = h;
+                    t = sch[j];
+                    sch[j] = sch[j+1];
+                    sch[j+1] = t;
+                }
+            }
+        }
+        return heapFiles;
+    }
 
 } // class Select implements Plan
