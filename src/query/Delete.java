@@ -69,6 +69,21 @@ class Delete implements Plan {
     }
     filescan.close();
 
+    Schema syscatS = Minibase.SystemCatalog.s_rel;
+      FileScan syscatFs = new FileScan(syscatS, Minibase.SystemCatalog.f_rel);
+      String tmp = null;
+      Tuple syscatT = null;
+      while (syscatFs.hasNext() && tmp == null) {
+          syscatT = syscatFs.getNext();
+          tmp = syscatT.getStringFld(0);
+          if (!file.equalsIgnoreCase(tmp))
+              tmp = null;
+      }
+      RID syscatRid = syscatFs.getLastRID();
+      int recCnt = syscatT.getIntFld(1) - count;
+      syscatT.setIntFld(1, recCnt);
+      Minibase.SystemCatalog.f_rel.updateRecord(syscatRid, syscatT.getData());
+
     System.out.println(count + " rows affected.");
     // print the output message
     // System.out.println("0 rows affected. (Not implemented)");
