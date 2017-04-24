@@ -10,7 +10,7 @@ import relop.Tuple;
 import global.Minibase;
 import global.SearchKey;
 import index.HashIndex;
-
+import global.RID;
 
 /**
  * Execution plan for deleting tuples.
@@ -41,23 +41,29 @@ class Delete implements Plan {
     FileScan filescan = new FileScan(sch, hf);
     Tuple temp;
     int count = 0;
+    boolean check;
 
     while(filescan.hasNext()){
       temp = filescan.getNext();
+      check = true;
       //Assigns to the next tuple
 
       for (int i = 0; i < preds.length; i++){
         for (int j = 0 ; j<preds[i].length; j++){
-          if(preds[i][j].evaluate(temp)){
-            count++;
-            hf.deleteRecord(filescan.getLastRID());
-            IndexDesc[] id = Minibase.SystemCatalog.getIndexes(file);
-            for(IndexDesc ind: id){
-              Minibase.SystemCatalog.dropIndex(ind.indexName);
-              Minibase.SystemCatalog.createIndex(ind.indexName, ind.tableName, ind.columnName);
-              // SHOULD THIS LAST LINE BE HERE??
-            }
+          if(!preds[i][j].evaluate(temp)){
+            check = false;
           }
+        }
+      }
+      if(check){
+        count++;
+        RID rid = filescan.getLastRID();
+        hf.deleteRecord(rid);
+        IndexDesc[] indexes = Minibase.SystemCatalog.getIndexes(file);
+        for (IndexDesc in : indexes){
+          HashIndex hash = new HashIndex(in.indexName);
+          SearchKey sk = new SearchKey(temp.getField(in.columnName));
+          hash.deleteEntry(sk, rid);
         }
       }
     }
